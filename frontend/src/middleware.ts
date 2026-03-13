@@ -112,7 +112,17 @@ export async function middleware(request: NextRequest) {
 
   let cacheId = cacheIdCookie?.value || crypto.randomUUID()
 
-  const regionMap = await getRegionMap(cacheId)
+  let regionMap: Map<string, HttpTypes.StoreRegion>
+
+  try {
+    regionMap = await getRegionMap(cacheId)
+  } catch (error) {
+    console.warn(
+      "Middleware.ts: Unable to fetch regions from Medusa. Continuing without region redirects.",
+      error
+    )
+    regionMap = new Map()
+  }
 
   const countryCode = regionMap && (await getCountryCode(request, regionMap))
 
