@@ -5,17 +5,16 @@ import RefinementList from "@modules/store/components/refinement-list"
 import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
 import PaginatedProducts from "@modules/store/templates/paginated-products"
 import { HttpTypes } from "@medusajs/types"
+import { getDefaultCountryCode } from "@lib/util/env"
 
 export default function CollectionTemplate({
   sortBy,
   collection,
   page,
-  countryCode,
 }: {
   sortBy?: SortOptions
   collection: HttpTypes.StoreCollection
   page?: string
-  countryCode: string
 }) {
   const pageNumber = page ? parseInt(page) : 1
   const sort = sortBy || "created_at"
@@ -38,7 +37,7 @@ export default function CollectionTemplate({
             sortBy={sort}
             page={pageNumber}
             collectionId={collection.id}
-            countryCode={countryCode}
+            countryCode={getDefaultCountryCode()}
           />
         </Suspense>
       </div>

@@ -2,6 +2,10 @@ const c = require("ansi-colors")
 
 const requiredEnvs = [
   {
+    key: "NEXT_PUBLIC_MEDUSA_BACKEND_URL",
+    description: "Your Medusa backend URL, for example http://localhost:9000",
+  },
+  {
     key: "NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY",
     // TODO: we need a good doc to point this to
     description:

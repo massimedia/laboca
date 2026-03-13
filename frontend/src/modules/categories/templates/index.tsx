@@ -8,22 +8,21 @@ import { SortOptions } from "@modules/store/components/refinement-list/sort-prod
 import PaginatedProducts from "@modules/store/templates/paginated-products"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import { HttpTypes } from "@medusajs/types"
+import { getDefaultCountryCode } from "@lib/util/env"
 
 export default function CategoryTemplate({
   category,
   sortBy,
   page,
-  countryCode,
 }: {
   category: HttpTypes.StoreProductCategory
   sortBy?: SortOptions
   page?: string
-  countryCode: string
 }) {
   const pageNumber = page ? parseInt(page) : 1
   const sort = sortBy || "created_at"
 
-  if (!category || !countryCode) notFound()
+  if (!category) notFound()
 
   const parents = [] as HttpTypes.StoreProductCategory[]
 
@@ -88,7 +87,7 @@ export default function CategoryTemplate({
             sortBy={sort}
             page={pageNumber}
             categoryId={category.id}
-            countryCode={countryCode}
+            countryCode={getDefaultCountryCode()}
           />
         </Suspense>
       </div>

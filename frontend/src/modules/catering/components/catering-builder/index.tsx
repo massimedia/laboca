@@ -6,6 +6,7 @@ import {
   retrieveCart,
   updateLineItem,
 } from "@lib/data/cart"
+import { getDefaultCountryCode } from "@lib/util/env"
 import { convertToLocale } from "@lib/util/money"
 import { HttpTypes } from "@medusajs/types"
 import { clx } from "@medusajs/ui"
@@ -29,7 +30,6 @@ type VariantCardData = {
 
 type CateringBuilderProps = {
   product: HttpTypes.StoreProduct
-  countryCode: string
 }
 
 const MIN_ORDER = 30
@@ -193,10 +193,7 @@ function PreparationIcon({
   return null
 }
 
-export default function CateringBuilder({
-  product,
-  countryCode,
-}: CateringBuilderProps) {
+export default function CateringBuilder({ product }: CateringBuilderProps) {
   const router = useRouter()
   const [preparation, setPreparation] = useState<Preparation>("frozen")
   const [dietFilter, setDietFilter] = useState<DietFilter>("all")
@@ -305,7 +302,7 @@ export default function CateringBuilder({
         await addToCart({
           variantId,
           quantity: safeQuantity,
-          countryCode,
+          countryCode: getDefaultCountryCode(),
         })
       }
 
@@ -323,7 +320,7 @@ export default function CateringBuilder({
 
   const handleCheckout = () => {
     if (!canCheckout) return
-    router.push(`/${countryCode}/checkout`)
+    router.push("/checkout")
   }
 
   return (

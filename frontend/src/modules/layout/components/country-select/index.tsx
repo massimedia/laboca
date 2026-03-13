@@ -11,8 +11,9 @@ import { Fragment, useEffect, useMemo, useState } from "react"
 import ReactCountryFlag from "react-country-flag"
 
 import { StateType } from "@lib/hooks/use-toggle-state"
-import { useParams, usePathname } from "next/navigation"
+import { usePathname } from "next/navigation"
 import { updateRegion } from "@lib/data/cart"
+import { getDefaultCountryCode } from "@lib/util/env"
 import { HttpTypes } from "@medusajs/types"
 
 type CountryOption = {
@@ -32,8 +33,8 @@ const CountrySelect = ({ toggleState, regions }: CountrySelectProps) => {
     | undefined
   >(undefined)
 
-  const { countryCode } = useParams()
-  const currentPath = usePathname().split(`/${countryCode}`)[1]
+  const currentPath = usePathname()
+  const currentCountryCode = getDefaultCountryCode()
 
   const { state, close } = toggleState
 
@@ -51,11 +52,9 @@ const CountrySelect = ({ toggleState, regions }: CountrySelectProps) => {
   }, [regions])
 
   useEffect(() => {
-    if (countryCode) {
-      const option = options?.find((o) => o?.country === countryCode)
-      setCurrent(option)
-    }
-  }, [options, countryCode])
+    const option = options?.find((o) => o?.country === currentCountryCode)
+    setCurrent(option)
+  }, [options, currentCountryCode])
 
   const handleChange = (option: CountryOption) => {
     updateRegion(option.country, currentPath)
@@ -68,9 +67,7 @@ const CountrySelect = ({ toggleState, regions }: CountrySelectProps) => {
         as="span"
         onChange={handleChange}
         defaultValue={
-          countryCode
-            ? options?.find((o) => o?.country === countryCode)
-            : undefined
+          options?.find((o) => o?.country === currentCountryCode)
         }
       >
         <ListboxButton className="py-1 w-full">

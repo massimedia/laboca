@@ -1,17 +1,15 @@
 import { listProducts } from "@lib/data/products"
 import { getRegion } from "@lib/data/regions"
+import { getDefaultCountryCode } from "@lib/util/env"
 import { HttpTypes } from "@medusajs/types"
 import Product from "../product-preview"
 
 type RelatedProductsProps = {
   product: HttpTypes.StoreProduct
-  countryCode: string
 }
 
-export default async function RelatedProducts({
-  product,
-  countryCode,
-}: RelatedProductsProps) {
+export default async function RelatedProducts({ product }: RelatedProductsProps) {
+  const countryCode = getDefaultCountryCode()
   const region = await getRegion(countryCode)
 
   if (!region) {
