@@ -1,7 +1,20 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 
-export function middleware() {
-  return NextResponse.next()
+const CACHE_COOKIE = "_medusa_cache_id"
+
+export function middleware(request: NextRequest) {
+  const response = NextResponse.next()
+
+  if (!request.cookies.has(CACHE_COOKIE)) {
+    response.cookies.set(CACHE_COOKIE, crypto.randomUUID(), {
+      maxAge: 60 * 60 * 24 * 365,
+      httpOnly: true,
+      sameSite: "strict",
+      secure: process.env.NODE_ENV === "production",
+    })
+  }
+
+  return response
 }
 
 export const config = {

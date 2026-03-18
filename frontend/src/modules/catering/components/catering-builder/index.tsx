@@ -10,6 +10,7 @@ import { getDefaultCountryCode } from "@lib/util/env"
 import { convertToLocale } from "@lib/util/money"
 import { HttpTypes } from "@medusajs/types"
 import { clx } from "@medusajs/ui"
+import Grid from "@modules/ui/components/grid"
 import { Carrot, Drumstick, Flame, Snowflake, Sprout } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
@@ -193,6 +194,19 @@ function PreparationIcon({
   return null
 }
 
+const getDisplayTitle = (title: string) => {
+  return title.replace(/\s*\/\s*(frozen|baked)\s*$/i, "").trim()
+}
+
+const formatCardPrice = (amount: number, currencyCode: string) => {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: currencyCode,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount)
+}
+
 export default function CateringBuilder({ product }: CateringBuilderProps) {
   const router = useRouter()
   const [preparation, setPreparation] = useState<Preparation>("frozen")
@@ -222,13 +236,13 @@ export default function CateringBuilder({ product }: CateringBuilderProps) {
 
   const cartItems = cart?.items ?? []
 
-  const quantityForVariant = (variantId: string) => {
-    const item = cartItems.find((lineItem) => lineItem.variant_id === variantId)
-    return item?.quantity ?? 0
-  }
-
   const lineItemForVariant = (variantId: string) => {
     return cartItems.find((lineItem) => lineItem.variant_id === variantId)
+  }
+
+  const quantityForVariant = (variantId: string) => {
+    const item = lineItemForVariant(variantId)
+    return item?.quantity ?? 0
   }
 
   const selectedVariants = useMemo(() => {
@@ -278,19 +292,26 @@ export default function CateringBuilder({ product }: CateringBuilderProps) {
   }, [])
 
   const setVariantQuantity = async (variantId: string, nextQuantity: number) => {
+    if (isMutatingCart) {
+      return
+    }
+
     const safeQuantity = Number.isFinite(nextQuantity)
       ? Math.max(0, Math.floor(nextQuantity))
       : 0
 
-    const existingLineItem = lineItemForVariant(variantId)
-
-    if (!existingLineItem && safeQuantity === 0) {
-      return
-    }
-
     setIsMutatingCart(true)
 
     try {
+      const freshCart = await retrieveCart().catch(() => null)
+      const existingLineItem =
+        freshCart?.items?.find((lineItem) => lineItem.variant_id === variantId) ??
+        null
+
+      if (!existingLineItem && safeQuantity === 0) {
+        return
+      }
+
       if (existingLineItem && safeQuantity === 0) {
         await deleteLineItem(existingLineItem.id)
       } else if (existingLineItem) {
@@ -308,14 +329,26 @@ export default function CateringBuilder({ product }: CateringBuilderProps) {
 
       await syncCart()
       router.refresh()
+    } catch (error) {
+      console.error("Cart update failed", error)
     } finally {
       setIsMutatingCart(false)
     }
   }
 
   const increaseVariantQuantity = async (variantId: string, amount: number) => {
-    const current = quantityForVariant(variantId)
-    await setVariantQuantity(variantId, current + amount)
+    if (isMutatingCart) {
+      return
+    }
+
+    const freshCart = await retrieveCart().catch(() => null)
+    const existingLineItem =
+      freshCart?.items?.find((lineItem) => lineItem.variant_id === variantId) ??
+      null
+    const current = existingLineItem?.quantity ?? 0
+    const next = current + amount
+
+    await setVariantQuantity(variantId, next)
   }
 
   const handleCheckout = () => {
@@ -386,92 +419,74 @@ export default function CateringBuilder({ product }: CateringBuilderProps) {
         </div>
       </section>
 
-      <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {filteredVariants.map((variant) => {
-          const quantity = quantityForVariant(variant.id)
+      <section>
+        <Grid className="gap-6 lg:gap-6">
+          {filteredVariants.map((variant) => {
+            const quantity = quantityForVariant(variant.id)
 
-          return (
-            <article
-              key={variant.id}
-              className="rounded-xl border border-ui-border-base bg-white p-4 shadow-sm flex flex-col gap-4"
-            >
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-medium text-lg text-ui-fg-base">{variant.title}</h3>
-                  <div className="flex items-center gap-2">
-                    <PreparationIcon preparation={variant.preparation} />
-                    <DietIcon diet={variant.diet} />
+            return (
+              <article
+                key={variant.id}
+                className="flex flex-col gap-5 rounded-xl border border-ui-border-base bg-white p-5 shadow-sm"
+              >
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xl font-semibold tracking-tight normal-case text-ui-fg-base">
+                      {getDisplayTitle(variant.title)}
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      <PreparationIcon preparation={variant.preparation} />
+                      <DietIcon diet={variant.diet} />
+                    </div>
+                  </div>
+                  {variant.description && (
+                    <p className="text-sm leading-5 text-ui-fg-subtle">
+                      {variant.description}
+                    </p>
+                  )}
+                  <p className="text-sm font-medium text-ui-fg-base">
+                    {formatCardPrice(variant.unitPrice, variant.currencyCode)}
+                  </p>
+                </div>
+
+                <div className="mt-auto">
+                  <div className="mt-3 flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={0}
+                      value={quantity}
+                      disabled={isMutatingCart || isCartLoading}
+                      onChange={(e) => {
+                        const parsed = parseInt(e.target.value, 10)
+                        void setVariantQuantity(
+                          variant.id,
+                          Number.isNaN(parsed) ? 0 : parsed
+                        )
+                      }}
+                      className="h-10 w-20 rounded-lg border border-ui-border-base px-3 text-sm text-center tabular-nums text-ui-fg-base disabled:cursor-not-allowed disabled:opacity-60 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    />
+                    <button
+                      type="button"
+                      disabled={isMutatingCart || isCartLoading}
+                      onClick={() => void increaseVariantQuantity(variant.id, 5)}
+                      className="h-10 rounded-lg border border-ui-border-base px-4 text-sm font-medium transition hover:bg-ui-bg-subtle disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      +5
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isMutatingCart || isCartLoading}
+                      onClick={() => void increaseVariantQuantity(variant.id, 10)}
+                      className="h-10 rounded-lg border border-ui-border-base px-4 text-sm font-medium transition hover:bg-ui-bg-subtle disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      +10
+                    </button>
                   </div>
                 </div>
-                {variant.description && (
-                  <p className="text-sm text-ui-fg-subtle leading-5">{variant.description}</p>
-                )}
-                <p className="text-sm font-medium text-ui-fg-base">
-                  {convertToLocale({
-                    amount: variant.unitPrice,
-                    currency_code: variant.currencyCode,
-                  })}
-                </p>
-              </div>
-
-              <div className="mt-auto">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <button
-                    type="button"
-                    disabled={isMutatingCart || isCartLoading}
-                    onClick={() => {
-                      void increaseVariantQuantity(variant.id, -1)
-                    }}
-                    className="h-9 w-9 rounded-lg border border-ui-border-base text-lg"
-                  >
-                    -
-                  </button>
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    min={0}
-                    value={quantity}
-                    onChange={(event) => {
-                      void setVariantQuantity(variant.id, Number(event.target.value))
-                    }}
-                    disabled={isMutatingCart || isCartLoading}
-                    className="h-9 w-20 rounded-lg border border-ui-border-base px-2 text-center"
-                  />
-                  <button
-                    type="button"
-                    disabled={isMutatingCart || isCartLoading}
-                    onClick={() => {
-                      void increaseVariantQuantity(variant.id, 1)
-                    }}
-                    className="h-9 w-9 rounded-lg border border-ui-border-base text-lg"
-                  >
-                    +
-                  </button>
-                  <button
-                    type="button"
-                    disabled={isMutatingCart || isCartLoading}
-                    onClick={() => {
-                      void increaseVariantQuantity(variant.id, 5)
-                    }}
-                    className="rounded-lg border border-ui-border-base px-3 py-1.5 text-sm"
-                  >
-                    +5
-                  </button>
-                  <button
-                    type="button"
-                    disabled={isMutatingCart || isCartLoading}
-                    onClick={() => {
-                      void increaseVariantQuantity(variant.id, 10)
-                    }}
-                    className="rounded-lg border border-ui-border-base px-3 py-1.5 text-sm"
-                  >
-                    +10
-                  </button>
-                </div>
-              </div>
-            </article>
-          )
-        })}
+              </article>
+            )
+          })}
+        </Grid>
       </section>
 
       {isDrawerOpen && (
@@ -589,7 +604,7 @@ export default function CateringBuilder({ product }: CateringBuilderProps) {
       </aside>
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-ui-border-base bg-white/95 backdrop-blur">
-        <div className="max-w-6xl mx-auto px-6 py-4">
+        <div className="max-w-[1600px] mx-auto px-8 py-4 lg:px-12">
           <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 items-center">
             <button
               type="button"

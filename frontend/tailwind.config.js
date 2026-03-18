@@ -21,6 +21,13 @@ module.exports = {
         padding: "padding-top padding-right padding-bottom padding-left",
       },
       colors: {
+        brand: {
+          red: "#C62828",
+          orange: "#E65100",
+          teal: "#1FA6A6",
+          cream: "#FFF4E3",
+          charcoal: "#1C1C1C",
+        },
         grey: {
           0: "#FFFFFF",
           5: "#F9FAFB",
@@ -59,8 +66,11 @@ module.exports = {
         "3xl": "2rem",
       },
       fontFamily: {
+        headline: ["var(--font-headline)", "sans-serif"],
+        display: ["var(--font-headline)", "sans-serif"],
+        body: ["var(--font-body)", "sans-serif"],
         sans: [
-          "Inter",
+          "var(--font-body)",
           "-apple-system",
           "BlinkMacSystemFont",
           "Segoe UI",
