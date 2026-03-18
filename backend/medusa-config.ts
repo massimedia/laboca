@@ -14,8 +14,8 @@ const requireEnv = (key: string): string => {
 
 module.exports = defineConfig({
   admin: {
-    // Disable serving the admin dashboard for this instance when requested.
-    disable: process.env.DISABLE_MEDUSA_ADMIN === "true",
+    // Always disable serving the admin dashboard for this instance.
+    disable: true,
   },
   projectConfig: {
     databaseUrl: requireEnv("DATABASE_URL"),
