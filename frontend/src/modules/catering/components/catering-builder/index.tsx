@@ -8,7 +8,14 @@ import {
 } from "@lib/data/cart"
 import { getDefaultCountryCode } from "@lib/util/env"
 import { convertToLocale } from "@lib/util/money"
-import { HttpTypes } from "@medusajs/types"
+import type {
+  StoreCart,
+  StoreCartLineItem,
+} from "@medusajs/types/dist/http/cart/store/entities"
+import type {
+  StoreProduct,
+  StoreProductVariant,
+} from "@medusajs/types/dist/http/product/store/entitites"
 import { clx } from "@medusajs/ui"
 import Grid from "@modules/ui/components/grid"
 import { Carrot, Drumstick, Flame, Snowflake, Sprout } from "lucide-react"
@@ -30,7 +37,7 @@ type VariantCardData = {
 }
 
 type CateringBuilderProps = {
-  product: HttpTypes.StoreProduct
+  product: StoreProduct
 }
 
 const MIN_ORDER = 30
@@ -130,7 +137,7 @@ const getVariantDescription = (
 }
 
 const toVariantCardData = (
-  variant: HttpTypes.StoreProductVariant,
+  variant: StoreProductVariant,
   fallbackDescription?: string | null
 ): VariantCardData | null => {
   if (!variant.id || !variant.title) {
@@ -211,7 +218,7 @@ export default function CateringBuilder({ product }: CateringBuilderProps) {
   const router = useRouter()
   const [preparation, setPreparation] = useState<Preparation>("frozen")
   const [dietFilter, setDietFilter] = useState<DietFilter>("all")
-  const [cart, setCart] = useState<HttpTypes.StoreCart | null>(null)
+  const [cart, setCart] = useState<StoreCart | null>(null)
   const [isCartLoading, setIsCartLoading] = useState(true)
   const [isMutatingCart, setIsMutatingCart] = useState(false)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
@@ -237,7 +244,9 @@ export default function CateringBuilder({ product }: CateringBuilderProps) {
   const cartItems = cart?.items ?? []
 
   const lineItemForVariant = (variantId: string) => {
-    return cartItems.find((lineItem) => lineItem.variant_id === variantId)
+    return (cartItems as StoreCartLineItem[]).find(
+      (lineItem) => lineItem.variant_id === variantId
+    )
   }
 
   const quantityForVariant = (variantId: string) => {
@@ -303,7 +312,7 @@ export default function CateringBuilder({ product }: CateringBuilderProps) {
     setIsMutatingCart(true)
 
     try {
-      const freshCart = await retrieveCart().catch(() => null)
+      const freshCart = (await retrieveCart().catch(() => null)) as StoreCart | null
       const existingLineItem =
         freshCart?.items?.find((lineItem) => lineItem.variant_id === variantId) ??
         null
@@ -341,7 +350,7 @@ export default function CateringBuilder({ product }: CateringBuilderProps) {
       return
     }
 
-    const freshCart = await retrieveCart().catch(() => null)
+    const freshCart = (await retrieveCart().catch(() => null)) as StoreCart | null
     const existingLineItem =
       freshCart?.items?.find((lineItem) => lineItem.variant_id === variantId) ??
       null

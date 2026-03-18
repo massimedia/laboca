@@ -1,28 +1,28 @@
-import { loadEnv, defineConfig } from '@medusajs/framework/utils'
+import { defineConfig } from "@medusajs/framework/utils"
 
-loadEnv(process.env.NODE_ENV || 'development', process.cwd())
+const requireEnv = (key: string): string => {
+  const value = process.env[key]
 
-if (!process.env.JWT_SECRET) {
-  throw new Error(
-    "Missing required environment variable: JWT_SECRET. Set JWT_SECRET before starting the Medusa backend."
-  )
-}
+  if (!value) {
+    throw new Error(
+      `Missing required environment variable: ${key}. Set ${key} before starting the Medusa backend.`
+    )
+  }
 
-if (!process.env.COOKIE_SECRET) {
-  throw new Error(
-    "Missing required environment variable: COOKIE_SECRET. Set COOKIE_SECRET before starting the Medusa backend."
-  )
+  return value
 }
 
 module.exports = defineConfig({
   projectConfig: {
-    databaseUrl: process.env.DATABASE_URL,
+    databaseUrl: requireEnv("DATABASE_URL"),
+    // Optional. If not provided, session data is stored in-memory.
+    redisUrl: process.env.REDIS_URL || undefined,
     http: {
-      storeCors: process.env.STORE_CORS!,
-      adminCors: process.env.ADMIN_CORS!,
-      authCors: process.env.AUTH_CORS!,
-      jwtSecret: process.env.JWT_SECRET,
-      cookieSecret: process.env.COOKIE_SECRET,
+      storeCors: requireEnv("STORE_CORS"),
+      adminCors: requireEnv("ADMIN_CORS"),
+      authCors: requireEnv("AUTH_CORS"),
+      jwtSecret: requireEnv("JWT_SECRET"),
+      cookieSecret: requireEnv("COOKIE_SECRET"),
     }
   }
 })
