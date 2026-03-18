@@ -13,6 +13,10 @@ const requireEnv = (key: string): string => {
 }
 
 module.exports = defineConfig({
+  admin: {
+    // Disable serving the admin dashboard for this instance when requested.
+    disable: process.env.DISABLE_MEDUSA_ADMIN === "true",
+  },
   projectConfig: {
     databaseUrl: requireEnv("DATABASE_URL"),
     // Optional. If not provided, session data is stored in-memory.
@@ -23,6 +27,6 @@ module.exports = defineConfig({
       authCors: requireEnv("AUTH_CORS"),
       jwtSecret: requireEnv("JWT_SECRET"),
       cookieSecret: requireEnv("COOKIE_SECRET"),
-    }
-  }
+    },
+  },
 })
