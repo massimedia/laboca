@@ -13,10 +13,6 @@ const requireEnv = (key: string): string => {
 }
 
 module.exports = defineConfig({
-  admin: {
-    // Always disable serving the admin dashboard for this instance.
-    disable: true,
-  },
   projectConfig: {
     databaseUrl: requireEnv("DATABASE_URL"),
     // Optional. If not provided, session data is stored in-memory.
